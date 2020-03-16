@@ -20,11 +20,17 @@ def main():
 
     api = API(args.server_url, args.username, args.password)
     if os.path.isdir(args.filename):
-        for file in os.listdir(args.filename):
-            if file.endswith(".cptv"):
-                filepath = os.path.join(args.filename, file)
-                print(filepath)
-                api.upload_recording(args.groupname, args.devicename, filepath)
+        for root, _, files in os.walk(args.filename):
+            for file in files:
+                if file.endswith(".cptv"):
+                    filepath = os.path.join(root, file)
+                    print(filepath)
+                    api.upload_recording(args.groupname, args.devicename, filepath)
+        # for file in os.listdir(args.filename):
+        #     if file.endswith(".cptv"):
+        #         filepath = os.path.join(args.filename, file)
+        #         print(filepath)
+        #         api.upload_recording(args.groupname, args.devicename, filepath)
     else:
         api.upload_recording(args.groupname, args.devicename, args.filename)
 
