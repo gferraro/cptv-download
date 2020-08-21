@@ -5,7 +5,7 @@ import argparse
 import datetime
 import json
 import os
-
+from trackdatabase import TrackDatabase
 from dateutil.parser import parse
 
 from api import API
@@ -47,6 +47,12 @@ class CPTVDownloader:
         self.not_selected = 0
         self.processed = 0
 
+        db = TrackDatabase(
+            os.path.join("/home/gp/cacophony/classifier-data/tracks", "dataset.hdf5")
+        )
+        self.loaded_clips = db.get_all_clip_ids()
+        print(self.loaded_clips)
+
     def log(self, message):
         if self.verbose:
             print(message)
@@ -83,7 +89,10 @@ class CPTVDownloader:
 
         pool = Pool(self.workers, self._downloader, api, Path(self.out_folder))
         for row in rows:
-            pool.put(row)
+            if row["id"] not in self.loaded_clips:
+                pool.put(row)
+            else:
+                print("already have", row["id"])
         pool.stop()
 
     def update_file_locations(self):
@@ -138,12 +147,13 @@ class CPTVDownloader:
         r["Tracks"] = api.get_tracks(r["id"]).get("tracks")
 
         tags_desc, out_dir = self._get_tags_descriptor_and_out_dir(r, file_base)
+
         if out_dir is None:
             print('No valid out directory for file "%s"' % file_base)
             return
 
         out_dir = out_base / out_dir
-
+        print(tags_desc, self.ignore_tags)
         if tags_desc in self.ignore_tags:
             print('Ignored file "%s" - tag "%s" ignored' % (file_base, tags_desc))
             self.ignored += 1
@@ -360,20 +370,20 @@ def parse_args():
         '-l', '--limit',
         default=1000,
         help='Limit number of downloads')
-    parser.add_argument('--mp4', 
-        dest='include_mp4', 
-        action='store_true', 
+    parser.add_argument('--mp4',
+        dest='include_mp4',
+        action='store_true',
         default=False,
         help='add if you want to download mp4 files')
-    parser.add_argument('-m', '--tagmode', 
-        dest='tag_mode', 
+    parser.add_argument('-m', '--tagmode',
+        dest='tag_mode',
         default='automatic+human',
         help='Select videos by only a particular tag mode.  Default is only selects videos tagged by both humans and automatic')
-    parser.add_argument('-id', 
-        dest='recording_id', 
+    parser.add_argument('-id',
+        dest='recording_id',
         default=None,
         help='Specify the recording id to download')
-    parser.add_argument('-recording_tags', 
+    parser.add_argument('-recording_tags',
         action='store_true',
         dest='recording_tags',
         help='Download and save recordings based of recording tags (Instead of track based tags)')
