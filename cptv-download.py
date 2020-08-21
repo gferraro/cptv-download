@@ -165,6 +165,10 @@ class CPTVDownloader:
             return
 
         fullpath = out_dir / file_base
+        if fullpath.with_suffix(".cptv").exists():
+            print("already exists skipping", fullpath)
+            return
+
         if self.auto_delete:
             self._delete_existing(file_base, out_dir)
 
